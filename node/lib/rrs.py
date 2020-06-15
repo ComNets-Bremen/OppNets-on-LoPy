@@ -178,6 +178,16 @@ def receive_from_link():
             # format: D:3FD1-245300:2167853
             update_cache(items[1], items[2])
 
+            # send data to application
+            data = 'D:' + items[1] + ':' + items[2]
+            try:
+                with common.app_lower_in_lock:
+                    common.app_lower_in_q.append(data)
+                    with common.logging_lock:
+                        common.log_activity('rrs   > app   | ' + data)
+            except:
+                pass
+
         # unknown type of message
         else:
             pass

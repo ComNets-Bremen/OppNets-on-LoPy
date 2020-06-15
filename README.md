@@ -13,7 +13,7 @@ A node implementation consist of a 3-layer protocol architecture.
 
 ## Running the Implementation (on a LoPy Device)
 
-We use the Atom IDE recommwnded by the makers of the LoPy4 device to load the implementation into the LoPy device. Simply open the `./node` folder as a project in the Atom IDE and follow the instructions given to upload the code into the LoPy4 device.
+The `Atom IDE`, one of the IDEs recommnded ([link](https://docs.pycom.io/pymakr/installation/atom/)) by the makers of the LoPy4 device was used to develop this implementation and to load it to the LoPy device. Simply open the `./node` folder as a project in the `Atom IDE` and follow the instructions given to upload the code into the LoPy4 device.
 
 
 
