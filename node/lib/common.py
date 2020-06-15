@@ -64,6 +64,7 @@ def initialize():
 
     # setup logging
     logging_lock = _thread.allocate_lock()
+    sd_card_present = False
 
     # log start of init
     with logging_lock:
@@ -76,8 +77,7 @@ def initialize():
         sd_card_present = True
 
     except:
-        sd_card_present = False
-        sd = None
+        pass
 
     # queues and locks for communication between app and rrs layers
     rrs_upper_in_q = ucollections.deque((), settings.MAX_QUEUE_SIZE)
@@ -129,11 +129,15 @@ def log_activity(info):
     # if SD card present, write to log
     if sd_card_present and settings.MAINTAIN_WRITTEN_LOG:
 
-        # create log file
-        logfp = open('/sd/log.txt', mode='a')
-        logfp.write(log_str)
-        logfp.write('\n')
-        logfp.close()
+        # write to log file
+        try:
+            logfp = open(settings.LOG_FILE_NAME, mode='a')
+            logfp.write(log_str)
+            logfp.write('\n')
+            logfp.close()
+        except:
+            print('something wrong with the log file')
+            print('could be - wrong path, log full')
 
 
 # get a random item from a list (by Peter Hinch)
