@@ -11,10 +11,11 @@ A node implementation consist of a 3-layer protocol architecture.
 
 
 
-## Running the Implementation (on a LoPy Device)
+## Running (on a LoPy Device)
 
-The `Atom IDE`, one of the IDEs recommnded ([link](https://docs.pycom.io/pymakr/installation/atom/)) by the makers of the LoPy4 device was used to develop this implementation and to load it to the LoPy device. Simply open the `./node` folder as a project in the `Atom IDE` and follow the instructions given to upload the code into the LoPy4 device.
+The `Atom IDE`, one of the IDEs recommnded ([link](https://docs.pycom.io/pymakr/installation/atom/)) by the makers of the LoPy4 device was used to develop this implementation and to load it to the LoPy device. Simply open the `./node` folder as a project in the `Atom IDE` and press the `Upload project to device` button to upload the code into the LoPy4 device.
 
+Do the same to run any of the tools in `./tools` folder.
 
 
 ## Current Implementation Status
@@ -36,9 +37,9 @@ The implementation is distributed in multiple source files. The following high-l
 
 A brief description of each of these high-level folders are given below.
 
-### RRS-LoRa Node Implementation (`./node` folder)
+### RRS-LoRa Node Implementation 
 
-The following source files implements the functionality of an OppNets node that uses the RRS forwarding protocol and the LoRa link layer.
+The following source files (in `./node` folder) implements the functionality of an OppNets node that uses the RRS forwarding protocol and the LoRa link layer.
 
 - `main.py` - initiates all operations
 - `lib/settings.py` - contains all the parameters used by other source files
@@ -48,9 +49,18 @@ The following source files implements the functionality of an OppNets node that 
 - `lib/rrs.py` - contains the code that implements the RRS functionality
 
 
-### Parsers (`./parsers` folder)
+### Parsers
 
-Currently contains only a place holder file.
+This folder (`./parsers`) holds all the parsers to extract data from the log. Currently contains only a place holder file.
+
+
+### Tools
+
+This folder (`./tools`) contains programs required for managing different components of the environment.
+
+#### Manage SD Card
+
+The `sd-check` tool is to manage the contents of an SD card plugged in.
 
 
 
@@ -131,7 +141,8 @@ All configurable parameters are listed in the `settings.py` file. The current se
 BROADCAST_ADDRESS = 'FFFF'
 MAX_QUEUE_SIZE = 50
 MAINTAIN_CONSOLE_LOG = True
-MAINTAIN_WRITTEN_LOG = False
+MAINTAIN_WRITTEN_LOG = True
+LOG_FILE_NAME = '/sd/log.txt'
 ```
 
 ### Application Settings

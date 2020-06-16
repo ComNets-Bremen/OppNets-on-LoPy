@@ -21,6 +21,7 @@ neigh_list = None
 # used locks
 socket_lock = None
 neigh_list_lock = None
+LED_blink_lock = None
 
 # neighbour list renewal flag
 neigh_list_updated = False
@@ -32,6 +33,7 @@ def initialize():
     global neigh_list
     global socket_lock
     global neigh_list_lock
+    global LED_blink_lock
     global neigh_list_updated
 
     # init neighbour list
@@ -41,6 +43,7 @@ def initialize():
     # init locks
     socket_lock = _thread.allocate_lock()
     neigh_list_lock = _thread.allocate_lock()
+    LED_blink_lock = _thread.allocate_lock()
 
     # neighbour list renewal flag
     neigh_list_updated = False
@@ -60,6 +63,7 @@ def send_msg():
     global neigh_list
     global socket_lock
     global neigh_list_lock
+    global LED_blink_lock
     global neigh_list_updated
 
     # endless loop to check in queue and send messages out
@@ -92,7 +96,8 @@ def send_msg():
         common.sock.send(msg)
 
         # light LED
-        blink_LED(settings.SEND_BLINK_COLOUR)
+        with LED_blink_lock:
+            blink_LED(settings.SEND_BLINK_COLOUR)
 
 
 # receive messages sent by neighbours
@@ -100,6 +105,7 @@ def recv_msg():
     global neigh_list
     global socket_lock
     global neigh_list_lock
+    global LED_blink_lock
     global neigh_list_updated
 
     # endless loop to receive messages
@@ -141,7 +147,8 @@ def recv_msg():
                 continue
 
             # light LED
-            blink_LED(settings.RECV_BLINK_COLOUR)
+            with LED_blink_lock:
+                blink_LED(settings.RECV_BLINK_COLOUR)
 
             # lock and insert neighbour
             with neigh_list_lock:
@@ -161,7 +168,8 @@ def recv_msg():
                 continue
 
             # light LED
-            blink_LED(settings.RECV_BLINK_COLOUR)
+            with LED_blink_lock:
+                blink_LED(settings.RECV_BLINK_COLOUR)
 
             # create message to send to RRS (without source & dest)
             # format: D:3FD1:129
@@ -231,6 +239,7 @@ def send_hello():
     global neigh_list
     global socket_lock
     global neigh_list_lock
+    global LED_blink_lock
     global neigh_list_updated
 
     # endless loop that broadcast HELLOs
@@ -249,10 +258,12 @@ def send_hello():
         common.sock.send(msg)
 
         # light LED
-        blink_LED(settings.SEND_BLINK_COLOUR)
+        with LED_blink_lock:
+            blink_LED(settings.SEND_BLINK_COLOUR)
 
 
 # blink LED for given color
+# IMPORTANT: always use LED_blink_lock to access this function
 def blink_LED(color):
 
     # convert color name to code
