@@ -8,9 +8,9 @@ import ucollections
 import _thread
 import machine
 import os
-import common
 import time
 import utime
+import common
 import settings
 
 # lists to hold cache and neighbours
@@ -59,12 +59,12 @@ def receive_from_app():
 
         # lock common queue and pop message from application
         # format: D:3FD1-200:456
-        with common.rrs_upper_in_lock:
+        with common.fwd_upper_in_lock:
             try:
                 # get data from the queue
-                msg = common.rrs_upper_in_q.popleft()
+                msg = common.fwd_upper_in_q.popleft()
                 with common.logging_lock:
-                    common.log_activity('rrs   < app   | ' + msg)
+                    common.log_activity('RRS   < app   | ' + msg)
             except:
                 msg = None
 
@@ -145,12 +145,12 @@ def receive_from_link():
         time.sleep(1)
 
         # lock common queue and pop message from link layer
-        with common.rrs_lower_in_lock:
+        with common.fwd_lower_in_lock:
             try:
                 # get message from the queue
-                msg = common.rrs_lower_in_q.popleft()
+                msg = common.fwd_lower_in_q.popleft()
                 with common.logging_lock:
-                    common.log_activity('rrs   < link  | ' + msg)
+                    common.log_activity('RRS   < link  | ' + msg)
             except:
                 msg = None
 
@@ -184,7 +184,7 @@ def receive_from_link():
                 with common.app_lower_in_lock:
                     common.app_lower_in_q.append(data)
                     with common.logging_lock:
-                        common.log_activity('rrs   > app   | ' + data)
+                        common.log_activity('RRS   > app   | ' + data)
             except:
                 pass
 
@@ -230,12 +230,12 @@ def update_cache(key, value):
         # value: 213
         cache[key] = value
         with common.logging_lock:
-            common.log_activity('rrs   > cache | ' + key + ':' + value)
+            common.log_activity('RRS   > cache | ' + key + ':' + value)
 
         # remove an entry if cache has exceeded limit
         if len(cache) > settings.CACHE_ITEM_LIMIT:
             rkey = list(cache)[0]
             rvalue = cache[rkey]
             with common.logging_lock:
-                common.log_activity('rrs   ! cache | ' + rkey + ':' + rvalue)
+                common.log_activity('RRS   ! cache | ' + rkey + ':' + rvalue)
             del cache[rkey]

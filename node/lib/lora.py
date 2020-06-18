@@ -13,6 +13,9 @@ import common
 import time
 import socket
 import utime
+import network
+import socket
+import ubinascii
 import settings
 
 # current neighbour list
@@ -26,6 +29,12 @@ LED_blink_lock = None
 # neighbour list renewal flag
 neigh_list_updated = False
 
+# LoRa interface parameters
+lora = None
+
+# socket var
+sock = None
+
 
 # initialize link layer
 def initialize():
@@ -35,6 +44,8 @@ def initialize():
     global neigh_list_lock
     global LED_blink_lock
     global neigh_list_updated
+    global lora
+    global sock
 
     # init neighbour list
     # self.neigh_list = ucollections.OrderedDict()
@@ -47,6 +58,27 @@ def initialize():
 
     # neighbour list renewal flag
     neigh_list_updated = False
+
+    # init LoRa interface
+    # initialise LoRa in LORA mode
+    # Please pick the region that matches where you are using the device:
+    # Asia = LoRa.AS923
+    # Australia = LoRa.AU915
+    # Europe = LoRa.EU868
+    # United States = LoRa.US915
+    # more params can also be given, like frequency, tx power and spreading factor
+    lora = network.LoRa(mode=network.LoRa.LORA, region=network.LoRa.EU868)
+
+    # get a unique ID
+    # mac() and hexlify() gives 16 byte address, we take only last 4 bytes
+    common.node_long_id = ubinascii.hexlify(lora.mac()).upper().decode('utf-8')
+    common.node_id = common.node_long_id[12:]
+
+    # setup the send, recv socket
+    sock = socket.socket(socket.AF_LORA, socket.SOCK_RAW)
+
+    with common.logging_lock:
+        common.log_activity('node ID - long ' + common.node_long_id + ' - short ' + common.node_id)
 
 
 # start link layer activity threads
@@ -65,6 +97,7 @@ def send_msg():
     global neigh_list_lock
     global LED_blink_lock
     global neigh_list_updated
+    global sock
 
     # endless loop to check in queue and send messages out
     while True:
@@ -72,12 +105,12 @@ def send_msg():
         # pause for some time
         time.sleep(1)
 
-        # lock common queue and pop message from RRS
+        # lock common queue and pop message from fwd layer
         with common.link_upper_in_lock:
             try:
                 msg = common.link_upper_in_q.popleft()
                 with common.logging_lock:
-                    common.log_activity('link  < rrs   | ' + msg)
+                    common.log_activity('link  < fwd   | ' + msg)
             except:
                 msg = None
 
@@ -93,7 +126,7 @@ def send_msg():
             common.log_activity('link  > LoRa  | ' + msg)
 
         # send the packet out
-        common.sock.send(msg)
+        sock.send(msg)
 
         # light LED
         with LED_blink_lock:
@@ -107,6 +140,7 @@ def recv_msg():
     global neigh_list_lock
     global LED_blink_lock
     global neigh_list_updated
+    global sock
 
     # endless loop to receive messages
     while True:
@@ -115,8 +149,8 @@ def recv_msg():
         time.sleep(1)
 
         # get message
-        common.sock.setblocking(True)
-        dbytes = common.sock.recv(64)
+        sock.setblocking(True)
+        dbytes = sock.recv(64)
 
         # some bytes received?
         if not (len(dbytes) > 0):
@@ -171,16 +205,16 @@ def recv_msg():
             with LED_blink_lock:
                 blink_LED(settings.RECV_BLINK_COLOUR)
 
-            # create message to send to RRS (without source & dest)
+            # create message to send to fwd (without source & dest)
             # format: D:3FD1:129
             nmsg = ':'.join(items[2:])
 
-            # push message to queue with RRS
-            with common.rrs_lower_in_lock:
+            # push message to queue with fwd
+            with common.fwd_lower_in_lock:
                 try:
-                    common.rrs_lower_in_q.append(nmsg)
+                    common.fwd_lower_in_q.append(nmsg)
                     with common.logging_lock:
-                        common.log_activity('link  > rrs   | ' + nmsg)
+                        common.log_activity('link  > fwd   | ' + nmsg)
                 except:
                     pass
 
@@ -189,7 +223,7 @@ def recv_msg():
             pass
 
 
-# send the current neighbour list to the RRS layer
+# send the current neighbour list to the fwd layer
 def send_neigh_list():
     global neigh_list
     global socket_lock
@@ -221,12 +255,12 @@ def send_neigh_list():
         msg = 'H:' + ':'.join(neigh_list) \
                     if len(neigh_list) > 0 else 'H:none'
 
-        # push message into queue with RRS
-        with common.rrs_lower_in_lock:
+        # push message into queue with fwd layer
+        with common.fwd_lower_in_lock:
             try:
-                common.rrs_lower_in_q.append(msg)
+                common.fwd_lower_in_q.append(msg)
                 with common.logging_lock:
-                    common.log_activity('link  > rrs   | ' + data)
+                    common.log_activity('link  > fwd   | ' + data)
             except:
                 pass
 
@@ -241,6 +275,7 @@ def send_hello():
     global neigh_list_lock
     global LED_blink_lock
     global neigh_list_updated
+    global sock
 
     # endless loop that broadcast HELLOs
     while True:
@@ -255,7 +290,7 @@ def send_hello():
             common.log_activity('link  > LoRa  | ' + msg)
 
         # send HELLO out
-        common.sock.send(msg)
+        sock.send(msg)
 
         # light LED
         with LED_blink_lock:

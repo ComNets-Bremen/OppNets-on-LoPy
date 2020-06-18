@@ -1,7 +1,7 @@
 # OppNets-on-LoPy
 
 
-Opportunistic Networking (OppNets) is a type of wireless networking acrchitecture where nodes communicate directly with other nodes to exchange information, without using any networking infrastructure such as wireless base stations or access points. This repository, OppNets-on-LoPy provides a collection of source code that implements operations of OppNets nodes for LoPy4 (PyCom) devices.
+Opportunistic Networking (OppNets) is a type of wireless networking acrchitecture where nodes communicate directly with other nodes to exchange information, without using any networking infrastructure such as wireless base stations or access points. This repository, OppNets-on-LoPy provides a collection of source code that implements the functionality to operate OppNets nodes for LoPy4 (PyCom) devices.
 
 A node implementation consist of a 3-layer protocol architecture.
 
@@ -9,22 +9,29 @@ A node implementation consist of a 3-layer protocol architecture.
 - Forwarding layer - implements the forwarding protocol to disseminate data
 - Link layer - implements the direct communications and neighbourhood management
 
+Depending on the requirement, each layer can be configured to use different implementations.
+
+## Loading, Configuring and Running (on a LoPy Device)
+
+The `Atom IDE`, one of the IDEs recommnded ([link](https://docs.pycom.io/pymakr/installation/atom/)) by the makers of the LoPy4 device was used to develop this implementation and to load it to the LoPy device. To load, configure and run, follow the instructions below.
 
 
-## Running (on a LoPy Device)
+1. Download this repository to a computer where the `Atom IDE` is installed
+2. Open the `./node` folder as a project (`Add Project Folder`) in the `Atom IDE`
+3. Setup the protocol stack (`APP_LAYER`, `FWD_LAYER`, `LINK_LAYER`) and the parmeters in the `lib/settings.py` (or leave as is to use the default settings)
+4. Press the `Upload project to device` button to upload the code into the LoPy4 device
 
-The `Atom IDE`, one of the IDEs recommnded ([link](https://docs.pycom.io/pymakr/installation/atom/)) by the makers of the LoPy4 device was used to develop this implementation and to load it to the LoPy device. Simply open the `./node` folder as a project in the `Atom IDE` and press the `Upload project to device` button to upload the code into the LoPy4 device.
+There are also other code available to perform different tasks related to the implementation. They could be code to run on LoPy devices (like manage the the SD card) or parsers run on your computer to pass a log. All these are made available under `./tools` or `./parsers`
 
-Do the same to run any of the tools in `./tools` folder.
 
 
 ## Current Implementation Status
 
-This is an on-going work and below are the important aspects of this implementation.
+This is an on-going work. Below is a list of the status of the current implementation.
 
-- Uses LoRa for direct communications between nodes
-- Uses the Randomized Rumour Spreading (RRS) forwarding protocol
-- Has a simple application that generates periodic data 
+- Uses LoRa for direct communications between nodes (in `./node/lib/lora.py` module)
+- Uses the Randomized Rumour Spreading (RRS) forwarding protocol (in `./node/lib/rrs.py` module)
+- Has a simple application that generates periodic data (in `./node/lib/simpleapp.py` module)
 
 
 
@@ -32,21 +39,23 @@ This is an on-going work and below are the important aspects of this implementat
 
 The implementation is distributed in multiple source files. The following high-level folders contain spacific parts of the implementation.
 
-- `./node` - all the micro-python code implementing a LoPy4 based OppNets node
-- `./parsers` - all the activity log parsers
+- `./node` - contains micro-python code implementing a LoPy4 based OppNets node
+- `./tools` - contains micro-python or other code that manages different aspects (e.g., manage SD card in a LoPy)
+- `./parsers` - contains parsers written to extract information (e.g., from the log created by the LoPy)
 
 A brief description of each of these high-level folders are given below.
 
-### RRS-LoRa Node Implementation 
 
-The following source files (in `./node` folder) implements the functionality of an OppNets node that uses the RRS forwarding protocol and the LoRa link layer.
+### Node Implementation 
+
+The following source files (in `./node` folder) implements the functionality of an OppNets node that is configured based on the diferent protocol layer implementations required.
 
 - `main.py` - initiates all operations
-- `lib/settings.py` - contains all the parameters used by other source files
+- `lib/settings.py` - contains the protocol layer configurations and all the parameters used
 - `lib/common.py` - contains all the common variables (e.g., queues) used by other source files
-- `lib/app.py` - contains code that implements the application
-- `lib/rrs.py` - contains the code that implements the RRS based forwarding layer functionality
-- `lib/rrs.py` - contains the code that implements the RRS functionality
+- `lib/simpleapp.py` - contains code that implements a simple data injection application
+- `lib/rrs.py` - contains the code that implements the RRS based forwarding functionality
+- `lib/lora.py` - contains the code that implements LoRa based communications
 
 
 ### Parsers
@@ -60,7 +69,7 @@ This folder (`./tools`) contains programs required for managing different compon
 
 #### Manage SD Card
 
-The `sd-check` tool is to manage the contents of an SD card plugged in.
+The `sd-check` tool is to manage the contents of an SD card plugged in to a LoPy (e.g., remove the log, dump the log).
 
 
 
@@ -74,6 +83,7 @@ Protocol layers exchange information using messages. Here are the formats of tho
   - `D` - a data message
   - `3B0C-9187043` - data name
   - `10950513` - data
+
 
 ### Forwarding Layer and Link Layer
 
@@ -90,7 +100,8 @@ Protocol layers exchange information using messages. Here are the formats of tho
   - `H` - neighbour list message
   - `E820:F213` 2 neighbours
 
-### Link Layer and LoRa
+
+### Link Layer and Wireless Interface (e.g., LoRa)
 
 - `Link Layer <-> LoRa` - `E820:FFFF:H:E820'
   - `E820` - source address
@@ -107,19 +118,29 @@ Protocol layers exchange information using messages. Here are the formats of tho
 
 
 
-## Implemented Forwarders
+## Implemented Protocol Layers
 
-Currently, only the Randomized Rumour Spreading (RRS) forwarding protocol is implemented. 
+Here is a description of the different protocol layers currently available in the implementation. We are updating this reqpository with new protocll layers when they become available.
+
+### Simple Data Injection Application
+
+This application generates data with random values and passes it on to the forwarding layer to inject to the network.
+
 
 ### Randomized Rumour Spreading (RRS)
 
-The RRS protocol selects a random data item from the cache and send it to all the neighbours (if Broadcast-RRS) or one random neighbour in the nighbourhood.
+The Randomized Rumour Spreading (RRS) is a forwarding protocol that selects data randomly from a cache and sends to nodes in the communication range of that node. When sending, it can decide either to broadcast (for every neighbour to receive) or send it to a specific node.
+
+
+### LoRa 
+
+This link protocol uses LoRa to perform direct communications with nodes in a neighbourhood. Using a hello message mechanism, it keeps track of the neighbours in a node's neighbourhood.
 
 
 
 ## Activity Logging
 
-All activities can be looged to the console and/or the log file. These have to be configured in the `settings.py` file. If the log file logging is enabled, a Micro SD card must be inserted to the LoPy4. Below is a sample of a log.
+All activities can be looged to the console and/or the log file. These have to be configured in the `lib/settings.py` file. If the log file writing is enabled, a Micro SD card must be inserted in the LoPy4. Below is a sample of a log.
 
 ```
 1536792 3B0C link  > LoRa  | 3B0C:FFFF:H:3B0C
@@ -133,7 +154,7 @@ All activities can be looged to the console and/or the log file. These have to b
 
 ## Settings
 
-All configurable parameters are listed in the `settings.py` file. The current settings are as follows.
+All configurable parameters are listed in the `lib/settings.py` file. The current settings are as follows.
 
 ### General Settings
 
@@ -143,31 +164,39 @@ MAX_QUEUE_SIZE = 50
 MAINTAIN_CONSOLE_LOG = True
 MAINTAIN_WRITTEN_LOG = True
 LOG_FILE_NAME = '/sd/log.txt'
-```
-
-### Application Settings
 
 ```
+
+### Application Layer Settings
+
+```
+APP_LAYER = 'simpleapp'
 DATA_GEN_INTERVAL_SEC = 13
-```
-
-### RRS Settings
 
 ```
+
+### Forwarding Layer Settings
+
+```
+FWD_LAYER = 'rrs'
 CACHE_ITEM_LIMIT = 50
 BROADCAST_RRS = False
 DATA_SEND_INTERVAL_SEC = 8
-```
-
-
-### Link Settings
 
 ```
+
+
+### Link Layer Settings
+
+```
+LINK_LAYER = 'lora'
 HELLO_INTERVAL_SEC = 5
 MISSED_HELLOS = 3
 SEND_BLINK_COLOUR = 'blue'
 RECV_BLINK_COLOUR = 'green'
+
 ```
+
 
 
 ## Firmware Versions
